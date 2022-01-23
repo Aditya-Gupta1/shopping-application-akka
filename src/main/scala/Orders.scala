@@ -17,10 +17,7 @@ case class Orders(customer: ActorRef, inventory: ActorRef,
 
   override def receive: Receive = {
     case AddOrder(customerEmail: String, orderItems: Set[OrderItem]) =>
-      val validCustomer: Boolean = Await.result(customer ? CustomerExists(customerEmail),
-        timeout.duration).asInstanceOf[Boolean]
-
-      if(validCustomer) {
+      if(Utils.isValidCustomer(customer, customerEmail)) {
         logger.info("Customer valid. Processing Order...")
         val orderNo: String = scala.util.Random.nextInt(1000000000).toString
         var totalAmount: Double = 0

@@ -18,7 +18,9 @@ object AppConstants {
   case class DeleteCustomer(customer: Customer)
   case class UpdateCustomerDetails(customerEmail: String, modifiedCustomer: Customer)
   case class CustomerState()
+  case class GetCustomerDetails(customerEmail: String)
   case class CustomerExists(customerEmail: String)
+  case class AddOrderToCustomer(customerEmail: String, order: Order)
 
   // Prices Commands
   case class UpdateCost(productName: String, productCost: Double)

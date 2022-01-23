@@ -12,8 +12,7 @@ case class ProductCost(inventory: ActorRef)
   var productPrices: Map[String, Double] = Map()
 
   override def receive: Receive = {
-    case UpdateCost(product: String, cost: Double) => {
-
+    case UpdateCost(product: String, cost: Double) =>
       val exists = Await.result(inventory ? DoesExistsInInventory(product),
         timeout.duration).asInstanceOf[Boolean]
 
@@ -24,7 +23,6 @@ case class ProductCost(inventory: ActorRef)
         logger.error(s"Product[$product] does not exists.")
         sender() ! ProductDoesNotExists
       }
-    }
     case GetProductCost(product: String) => sender() ! productPrices.getOrElse(product, -1.0)
     case ProductCostState => sender() ! productPrices
   }
