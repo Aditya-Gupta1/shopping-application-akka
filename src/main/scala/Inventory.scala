@@ -21,7 +21,7 @@ class Inventory extends Actor with LazyLogging {
     case AddToInventory(product: String, quantity: Int) =>
       val currentQuantity = inventory.getOrElse(product, 0)
       inventory = inventory ++ Map(product -> (currentQuantity + quantity))
-      logger.info(s"Product[${product}] added to inventory: $quantity")
+      logger.info(s"Product[$product] added to inventory: $quantity")
       sender() ! ProductAdded
 
     case DecreaseItemsFromInventory(product: String, quantity: Int) =>

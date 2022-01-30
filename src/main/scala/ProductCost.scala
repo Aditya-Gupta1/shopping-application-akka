@@ -1,8 +1,9 @@
-import AppConstants.{DoesExistsInInventory, GetProductCost, ProductCostState, ProductDoesNotExists, UpdateCost}
+import AppConstants.{DoesExistsInInventory, GetProductCost, ProductCostState, ProductDoesNotExists, ProductPriceUpdated, UpdateCost}
 import akka.actor.{Actor, ActorRef}
 import akka.pattern.ask
 import akka.util.Timeout
 import com.typesafe.scalalogging.LazyLogging
+
 import scala.concurrent.{Await, ExecutionContext}
 
 case class ProductCost(inventory: ActorRef)
@@ -19,6 +20,7 @@ case class ProductCost(inventory: ActorRef)
       if (exists) {
         productPrices = productPrices ++ Map(product -> cost)
         logger.info(s"Product[$product] with price[$cost] saved.")
+        sender() ! ProductPriceUpdated
       } else {
         logger.error(s"Product[$product] does not exists.")
         sender() ! ProductDoesNotExists

@@ -1,4 +1,4 @@
-import AppConstants.{AddToInventory, ProductCostState, ProductDoesNotExists, UpdateCost}
+import AppConstants.{AddToInventory, ProductAdded, ProductCostState, ProductDoesNotExists, ProductPriceUpdated, UpdateCost}
 import akka.actor.{ActorRef, Props}
 import akka.util.Timeout
 
@@ -15,10 +15,15 @@ class ProductCostSpec extends BasicTestSpec {
       val productCostTestActor: ActorRef = system.actorOf(Props(ProductCost(inventoryTestActor)))
 
       inventoryTestActor ! AddToInventory("Keyboard", 10)
+      expectMsg(ProductAdded)
       inventoryTestActor ! AddToInventory("Mouse", 20)
+      expectMsg(ProductAdded)
       inventoryTestActor ! AddToInventory("Chair", 5)
+      expectMsg(ProductAdded)
 
       productCostTestActor ! UpdateCost("Keyboard", 5)
+      expectMsg(ProductPriceUpdated)
+
       productCostTestActor ! ProductCostState
       expectMsg(Map("Keyboard" -> 5.0))
     }
@@ -28,8 +33,11 @@ class ProductCostSpec extends BasicTestSpec {
       val productCostTestActor: ActorRef = system.actorOf(Props(ProductCost(inventoryTestActor)))
 
       inventoryTestActor ! AddToInventory("Keyboard", 10)
+      expectMsg(ProductAdded)
       inventoryTestActor ! AddToInventory("Mouse", 20)
+      expectMsg(ProductAdded)
       inventoryTestActor ! AddToInventory("Chair", 5)
+      expectMsg(ProductAdded)
 
       productCostTestActor ! UpdateCost("Table", 5)
       expectMsg(ProductDoesNotExists)
