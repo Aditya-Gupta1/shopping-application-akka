@@ -15,6 +15,10 @@ object AppConstants {
 
   // Inventory Response
   case class ProductDoesNotExists()
+  case class ProductDeleted()
+  case class ProductAdded()
+  case class NotEnoughProductQuantity()
+  case class ProductQuantityDecreased()
 
   // Customer Commands
   case class AddCustomer(customer: Customer)
