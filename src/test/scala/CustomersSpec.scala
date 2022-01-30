@@ -1,4 +1,4 @@
-import AppConstants.{AddCustomer, AddOrderToCustomer, Customer, CustomerDoesNotExists, CustomerEmailAlreadyExists, CustomerExists, CustomerState, DeleteCustomer, GetCustomerDetails, Order, OrderItem, UpdateCustomerDetails}
+import AppConstants.{AddCustomer, AddOrderToCustomer, Customer, CustomerAdded, CustomerDeleted, CustomerDoesNotExists, CustomerEmailAlreadyExists, CustomerExists, CustomerState, CustomerUpdated, DeleteCustomer, GetCustomerDetails, Order, OrderAddedToCustomer, OrderItem, UpdateCustomerDetails}
 import akka.actor.{ActorRef, Props}
 
 class CustomersSpec extends BasicTestSpec {
@@ -12,6 +12,7 @@ class CustomersSpec extends BasicTestSpec {
         "address 123", "123456789", "aditya.gupta@gmail.com")
 
       customerTestActor ! AddCustomer(testCustomer)
+      expectMsg(CustomerAdded)
 
       customerTestActor ! CustomerState
       expectMsg(Map(testCustomer.email -> testCustomer))
@@ -24,6 +25,8 @@ class CustomersSpec extends BasicTestSpec {
         "address 123", "123456789", "aditya.gupta@gmail.com")
 
       customerTestActor ! AddCustomer(testCustomer)
+      expectMsg(CustomerAdded)
+
       customerTestActor ! AddCustomer(testCustomer)
       expectMsg(CustomerEmailAlreadyExists(s"Email[${testCustomer.email}] already exists!"))
     }
@@ -35,6 +38,8 @@ class CustomersSpec extends BasicTestSpec {
         "address 123", "123456789", "aditya.gupta@gmail.com")
 
       customerTestActor ! AddCustomer(testCustomer)
+      expectMsg(CustomerAdded)
+
       customerTestActor ! CustomerState
       expectMsg(Map(testCustomer.email -> testCustomer))
     }
@@ -46,12 +51,10 @@ class CustomersSpec extends BasicTestSpec {
         "address 123", "123456789", "aditya.gupta@gmail.com")
 
       customerTestActor ! AddCustomer(testCustomer)
-      customerTestActor ! CustomerState
-      expectMsg(Map(testCustomer.email -> testCustomer))
+      expectMsg(CustomerAdded)
 
       customerTestActor ! DeleteCustomer(testCustomer)
-      customerTestActor ! CustomerState
-      expectMsg(Map())
+      expectMsg(CustomerDeleted)
     }
 
     "handle when deleting a customer which does not exists" in {
@@ -61,12 +64,10 @@ class CustomersSpec extends BasicTestSpec {
         "address 123", "123456789", "aditya.gupta@gmail.com")
 
       customerTestActor ! AddCustomer(testCustomer)
-      customerTestActor ! CustomerState
-      expectMsg(Map(testCustomer.email -> testCustomer))
+      expectMsg(CustomerAdded)
 
       customerTestActor ! DeleteCustomer(testCustomer)
-      customerTestActor ! CustomerState
-      expectMsg(Map())
+      expectMsg(CustomerDeleted)
 
       customerTestActor ! DeleteCustomer(testCustomer)
       expectMsg(CustomerDoesNotExists(s"Customer[$testCustomer] does not exists!"))
@@ -80,10 +81,13 @@ class CustomersSpec extends BasicTestSpec {
       val testModifiedCustomer: Customer = Customer("Aditya Gupta", "new address", "123456789", "aditya.gupta@gmail.com")
 
       customerTestActor ! AddCustomer(testCustomer)
+      expectMsg(CustomerAdded)
+
       customerTestActor ! UpdateCustomerDetails(testCustomer.email, testModifiedCustomer)
-      customerTestActor ! CustomerState
+      expectMsg(CustomerUpdated)
 
       val testCustomers = Map(testCustomer.email -> testModifiedCustomer)
+      customerTestActor ! CustomerState
       expectMsg(testCustomers)
     }
 
@@ -92,12 +96,15 @@ class CustomersSpec extends BasicTestSpec {
       val customerTestActor: ActorRef = system.actorOf(Props(Customers(inventoryTestActor)))
       val testCustomer: Customer = Customer("Aditya Gupta",
         "address 123", "123456789", "aditya.gupta@gmail.com")
+      val wrongEmail: String = "random@gmail.com"
 
       customerTestActor ! AddCustomer(testCustomer)
+      expectMsg(CustomerAdded)
+
       customerTestActor ! CustomerExists(testCustomer.email)
       expectMsg(true)
 
-      customerTestActor ! CustomerExists("random@gmail.com")
+      customerTestActor ! CustomerExists(wrongEmail)
       expectMsg(false)
     }
 
@@ -109,6 +116,8 @@ class CustomersSpec extends BasicTestSpec {
       val wrongEmail: String = "dummy@gmail.com"
 
       customerTestActor ! AddCustomer(testCustomer)
+      expectMsg(CustomerAdded)
+
       customerTestActor ! GetCustomerDetails(testCustomer.email)
       expectMsg(testCustomer)
 
@@ -127,7 +136,11 @@ class CustomersSpec extends BasicTestSpec {
       val wrongEmail: String = "dummy@gmail.com"
 
       customerTestActor ! AddCustomer(testCustomer)
+      expectMsg(CustomerAdded)
+
       customerTestActor ! AddOrderToCustomer(testCustomer.email, testOrder)
+      expectMsg(OrderAddedToCustomer)
+
       customerTestActor ! GetCustomerDetails(testCustomer.email)
       expectMsg(testCustomer.copy(orders = Set(testOrder)))
 
