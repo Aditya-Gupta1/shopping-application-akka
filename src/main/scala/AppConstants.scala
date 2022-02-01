@@ -48,7 +48,7 @@ object AppConstants {
   case class OrdersState()
 
   // Order Response
-  case class IsOrderProcessed(processed: Boolean, failedReason: String = "")
+  case class OrderProcessingOutput(processed: Boolean, failedReason: String = "")
 
   // Exceptions
   case class CustomerEmailAlreadyExists(message: String)

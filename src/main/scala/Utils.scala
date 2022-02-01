@@ -11,4 +11,6 @@ object Utils {
                      (implicit timeout: Timeout): Boolean =
     Await.result(customerActor ? CustomerExists(customerEmail),
       timeout.duration).asInstanceOf[Boolean]
+
+  def generateOrderNo: String = scala.util.Random.nextInt(1000000000).toString
 }

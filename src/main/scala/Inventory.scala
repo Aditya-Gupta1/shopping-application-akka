@@ -33,7 +33,7 @@ class Inventory extends Actor with LazyLogging {
       }
       else {
         inventory = inventory ++ Map(product -> (currentQuantity - quantity))
-        logger.info(s"$quantity items of product [$product] deleted." +
+        logger.info(s"$quantity items of product [$product] decreased." +
         s" Current items: ${currentQuantity - quantity}")
         sender() ! ProductQuantityDecreased
       }

@@ -1,4 +1,4 @@
-import AppConstants.{AddOrder, CustomerDoesNotExists, CustomerExists, GetItemFromInventory, GetProductCost, IsOrderProcessed, Order, OrderItem, OrdersState}
+import AppConstants.{AddOrder, CustomerDoesNotExists, CustomerExists, DecreaseItemsFromInventory, GetItemFromInventory, GetProductCost, NotEnoughProductQuantity, Order, OrderItem, OrderProcessingOutput, OrdersState, ProductQuantityDecreased}
 import akka.actor.{Actor, ActorRef}
 import akka.pattern.ask
 import akka.util.Timeout
@@ -19,43 +19,59 @@ case class Orders(customer: ActorRef, inventory: ActorRef,
     case AddOrder(customerEmail: String, orderItems: Set[OrderItem]) =>
       if(Utils.isValidCustomer(customer, customerEmail)) {
         logger.info("Customer valid. Processing Order...")
-        val orderNo: String = scala.util.Random.nextInt(1000000000).toString
+        val orderNo: String = Utils.generateOrderNo
         var totalAmount: Double = 0
         var allItemsCostValid: Boolean = true
         var allItemsExists: Boolean = true
+        var insufficientQuantity: Boolean = false
+        var processingMessage: String = ""
+        var itemDetails: Map[String, List[Double]] = Map()
 
-        // TODO-1: Check if the quantity in order is >= quantity in inventory
+        // TODO: If order is processed, only then decrease item quantity in inventory
         breakable {
           for (item <- orderItems) {
-            val doesExists: Boolean = Await.result(inventory ? GetItemFromInventory(item.productName),
-              timeout.duration).asInstanceOf[Int] != -1
+            val itemQuantityAvailable: Int = Await.result(inventory ? GetItemFromInventory(item.productName),
+              timeout.duration).asInstanceOf[Int]
+            val doesExists: Boolean = itemQuantityAvailable != -1
             val itemPrice: Double = Await.result(productCost ? GetProductCost(item.productName),
               timeout.duration).asInstanceOf[Double]
 
             if (!doesExists) {
               logger.error(s"Product[${item.productName}] does not exists!")
               allItemsExists = false
+              processingMessage = "One/more items product does not exists."
               break
             }
             else if (itemPrice == -1) {
               logger.error(s"Product[${item.productName}]'s price is not available!")
               allItemsCostValid = false
+              processingMessage = "One or more item's cost invalid."
               break
             }
-            if (allItemsExists && allItemsCostValid)
+            else if(itemQuantityAvailable < item.quantity) {
+              logger.error(s"Product[${item.productName}] has only $itemQuantityAvailable items left. " +
+              s"Order Placed for ${item.quantity} items.")
+              insufficientQuantity = true
+              processingMessage = "Not enough quantity of items for one or more products."
+              break
+            }
+            if (allItemsExists && allItemsCostValid && !insufficientQuantity) {
               totalAmount += (itemPrice * item.quantity)
+              (inventory ? DecreaseItemsFromInventory(item.productName, item.quantity))
+            }
           }
         }
-        if(!allItemsExists)
-          sender() ! IsOrderProcessed(processed = false, "One/more items product does not exists.")
-        else if(!allItemsCostValid)
-          sender() ! IsOrderProcessed(processed = false, "One or more item's cost invalid.")
+        if(!allItemsExists || !allItemsCostValid || insufficientQuantity)
+          {
+            sender() ! OrderProcessingOutput(processed = false, processingMessage)
+            logger.error(s"Order Processing Failed.")
+          }
         else {
           val order: Order = Order(orderNo, orderItems, totalAmount, customerEmail)
           orders = orders ++ Map(orderNo -> order)
-          // TODO-2: Add order to the customer object/map.
+          // TODO: Add order to the customer object/map.
           logger.info(s"Order Processed for customer[$customerEmail]: $order")
-          sender() ! IsOrderProcessed(processed = true)
+          sender() ! OrderProcessingOutput(processed = true)
         }
       }
       else {
