@@ -1,4 +1,4 @@
-import AppConstants.{AddOrder, CustomerDoesNotExists, CustomerExists, DecreaseItemsFromInventory, GetItemFromInventory, GetProductCost, NotEnoughProductQuantity, Order, OrderItem, OrderProcessingOutput, OrdersState, ProductQuantityDecreased}
+import AppConstants.{AddOrder, CustomerDoesNotExists, DecreaseItemsFromInventory, GetItemFromInventory, GetProductCost, Order, OrderItem, OrderProcessingOutput, OrdersState}
 import akka.actor.{Actor, ActorRef}
 import akka.pattern.ask
 import akka.util.Timeout
@@ -19,7 +19,6 @@ case class Orders(customer: ActorRef, inventory: ActorRef,
     case AddOrder(customerEmail: String, orderItems: Set[OrderItem]) =>
       if(Utils.isValidCustomer(customer, customerEmail)) {
         logger.info("Customer valid. Processing Order...")
-        val orderNo: String = Utils.generateOrderNo
         var totalAmount: Double = 0
         var allItemsCostValid: Boolean = true
         var allItemsExists: Boolean = true
@@ -56,8 +55,8 @@ case class Orders(customer: ActorRef, inventory: ActorRef,
               break
             }
             if (allItemsExists && allItemsCostValid && !insufficientQuantity) {
-              totalAmount += (itemPrice * item.quantity)
-              (inventory ? DecreaseItemsFromInventory(item.productName, item.quantity))
+              itemDetails = itemDetails ++ Map(item.productName ->
+                List(itemPrice, item.quantity, itemQuantityAvailable))
             }
           }
         }
@@ -67,6 +66,11 @@ case class Orders(customer: ActorRef, inventory: ActorRef,
             logger.error(s"Order Processing Failed.")
           }
         else {
+          for (item <- itemDetails.keysIterator) {
+            totalAmount += (itemDetails(item).head * itemDetails(item)(1))
+            inventory ? DecreaseItemsFromInventory(item, itemDetails(item)(1).toInt)
+          }
+          val orderNo: String = Utils.generateOrderNo
           val order: Order = Order(orderNo, orderItems, totalAmount, customerEmail)
           orders = orders ++ Map(orderNo -> order)
           // TODO: Add order to the customer object/map.
