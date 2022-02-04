@@ -1,4 +1,4 @@
-import AppConstants.{AddCustomer, AddOrder, AddToInventory, Customer, CustomerAdded, CustomerDoesNotExists, GetItemFromInventory, Order, OrderItem, OrderProcessingOutput, OrdersState, ProductAdded, ProductPriceUpdated, UpdateCost}
+import AppConstants.{AddCustomer, AddOrder, AddToInventory, Customer, CustomerAdded, CustomerDoesNotExists, GetCustomerDetails, GetItemFromInventory, Order, OrderItem, OrderProcessingOutput, OrdersState, ProductAdded, ProductPriceUpdated, UpdateCost}
 import akka.actor.{ActorRef, Props}
 import akka.pattern.ask
 import akka.util.Timeout
@@ -282,6 +282,45 @@ class OrdersSpec extends BasicTestSpec {
       expectMsg(20)
       inventoryTestActor ! GetItemFromInventory("Chair")
       expectMsg(5)
+    }
+
+    "Add the order to customer" in {
+      val inventoryTestActor: ActorRef = system.actorOf(Props[Inventory])
+      val customerTestActor: ActorRef = system.actorOf(Props(Customers(inventoryTestActor)))
+      val productCostTestActor: ActorRef = system.actorOf(Props(ProductCost(inventoryTestActor)))
+      val ordersTestActor: ActorRef = system.actorOf(Props(Orders(customerTestActor,
+        inventoryTestActor, productCostTestActor)))
+
+      inventoryTestActor ! AddToInventory("Keyboard", 10)
+      expectMsg(ProductAdded)
+      inventoryTestActor ! AddToInventory("Mouse", 20)
+      expectMsg(ProductAdded)
+      inventoryTestActor ! AddToInventory("Chair", 5)
+      expectMsg(ProductAdded)
+
+      val testCustomer: Customer = Customer("Aditya Gupta",
+        "address 123", "123456789", "aditya.gupta@gmail.com")
+      customerTestActor ! AddCustomer(testCustomer)
+      expectMsg(CustomerAdded)
+
+      productCostTestActor ! UpdateCost("Keyboard", 100.0)
+      expectMsg(ProductPriceUpdated)
+      productCostTestActor ! UpdateCost("Mouse", 50.0)
+      expectMsg(ProductPriceUpdated)
+      productCostTestActor ! UpdateCost("Chair", 500.0)
+      expectMsg(ProductPriceUpdated)
+
+      val orderItems: Set[OrderItem] = Set(
+        OrderItem("Keyboard", 5),
+        OrderItem("Mouse", 10),
+        OrderItem("Chair", 1)
+      )
+      ordersTestActor ! AddOrder(testCustomer.email, orderItems)
+      expectMsg(OrderProcessingOutput(processed = true)) // Order Successful
+
+      val customerDetails: Customer = Await.result(customerTestActor ? GetCustomerDetails(testCustomer.email),
+        timeout.duration).asInstanceOf[Customer]
+      assert(customerDetails.orders.size == 1)
     }
   }
 }

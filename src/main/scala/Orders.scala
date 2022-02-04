@@ -1,4 +1,4 @@
-import AppConstants.{AddOrder, CustomerDoesNotExists, DecreaseItemsFromInventory, GetItemFromInventory, GetProductCost, Order, OrderItem, OrderProcessingOutput, OrdersState}
+import AppConstants.{AddOrder, AddOrderToCustomer, CustomerDoesNotExists, DecreaseItemsFromInventory, GetItemFromInventory, GetProductCost, Order, OrderItem, OrderProcessingOutput, OrdersState}
 import akka.actor.{Actor, ActorRef}
 import akka.pattern.ask
 import akka.util.Timeout
@@ -26,7 +26,6 @@ case class Orders(customer: ActorRef, inventory: ActorRef,
         var processingMessage: String = ""
         var itemDetails: Map[String, List[Double]] = Map()
 
-        // TODO: If order is processed, only then decrease item quantity in inventory
         breakable {
           for (item <- orderItems) {
             val itemQuantityAvailable: Int = Await.result(inventory ? GetItemFromInventory(item.productName),
@@ -73,7 +72,7 @@ case class Orders(customer: ActorRef, inventory: ActorRef,
           val orderNo: String = Utils.generateOrderNo
           val order: Order = Order(orderNo, orderItems, totalAmount, customerEmail)
           orders = orders ++ Map(orderNo -> order)
-          // TODO: Add order to the customer object/map.
+          customer ? AddOrderToCustomer(customerEmail, order)
           logger.info(s"Order Processed for customer[$customerEmail]: $order")
           sender() ! OrderProcessingOutput(processed = true)
         }
