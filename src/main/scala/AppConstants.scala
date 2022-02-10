@@ -14,7 +14,10 @@ object AppConstants {
   case class DoesExistsInInventory(productName: String)
 
   // Inventory Response
-  case class ProductDoesNotExists()
+  case class ProductDeleted()
+  case class ProductAdded()
+  case class NotEnoughProductQuantity()
+  case class ProductQuantityDecreased()
 
   // Customer Commands
   case class AddCustomer(customer: Customer)
@@ -31,17 +34,23 @@ object AppConstants {
   case class CustomerUpdated()
   case class OrderAddedToCustomer()
 
-  // Prices Commands
+  // ProductCost Commands
   case class UpdateCost(productName: String, productCost: Double)
   case class ProductCostState()
   case class GetProductCost(productName: String)
+  case class DeleteProductCost(productName: String)
+
+  // ProductCost Response
+  case class ProductDoesNotExists()
+  case class ProductPriceUpdated()
+  case class ProductPriceDeleted()
 
   // Order Commands
   case class AddOrder(customerEmail: String, orderItems: Set[OrderItem])
   case class OrdersState()
 
   // Order Response
-  case class IsOrderProcessed(processed: Boolean, failedReason: String = "")
+  case class OrderProcessingOutput(processed: Boolean, failedReason: String = "")
 
   // Exceptions
   case class CustomerEmailAlreadyExists(message: String)
