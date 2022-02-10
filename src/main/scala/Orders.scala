@@ -19,7 +19,7 @@ case class Orders(customer: ActorRef, inventory: ActorRef,
     case AddOrder(customerEmail: String, orderItems: Set[OrderItem]) =>
       if(Utils.isValidCustomer(customer, customerEmail)) {
         logger.info("Customer valid. Processing Order...")
-        var totalAmount: Double = 0
+
         var allItemsCostValid: Boolean = true
         var allItemsExists: Boolean = true
         var insufficientQuantity: Boolean = false
@@ -65,13 +65,11 @@ case class Orders(customer: ActorRef, inventory: ActorRef,
             logger.error(s"Order Processing Failed.")
           }
         else {
-          for (item <- itemDetails.keysIterator) {
-            totalAmount += (itemDetails(item).head * itemDetails(item)(1))
-            inventory ? DecreaseItemsFromInventory(item, itemDetails(item)(1).toInt)
-          }
+          val totalAmount: Double = Utils.calculateOrderTotal(itemDetails, inventory)
           val orderNo: String = Utils.generateOrderNo
           val order: Order = Order(orderNo, orderItems, totalAmount, customerEmail)
           orders = orders ++ Map(orderNo -> order)
+
           customer ? AddOrderToCustomer(customerEmail, order)
           logger.info(s"Order Processed for customer[$customerEmail]: $order")
           sender() ! OrderProcessingOutput(processed = true)
