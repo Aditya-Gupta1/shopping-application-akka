@@ -1,4 +1,4 @@
-import AppConstants.{DoesExistsInInventory, GetProductCost, ProductCostState, ProductDoesNotExists, ProductPriceUpdated, UpdateCost}
+import AppConstants.{DeleteProductCost, DoesExistsInInventory, GetProductCost, ProductCostState, ProductDoesNotExists, ProductPriceDeleted, ProductPriceUpdated, UpdateCost}
 import akka.actor.{Actor, ActorRef}
 import akka.pattern.ask
 import akka.util.Timeout
@@ -26,6 +26,10 @@ case class ProductCost(inventory: ActorRef)
         sender() ! ProductDoesNotExists
       }
     case GetProductCost(product: String) => sender() ! productPrices.getOrElse(product, -1.0)
+    case DeleteProductCost(product: String) =>
+      productPrices -= product
+      logger.info(s"Product[$product]'s price deleted.")
+      sender() ! ProductPriceDeleted
     case ProductCostState => sender() ! productPrices
   }
 }

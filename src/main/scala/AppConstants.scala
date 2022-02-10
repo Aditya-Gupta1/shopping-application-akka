@@ -38,10 +38,12 @@ object AppConstants {
   case class UpdateCost(productName: String, productCost: Double)
   case class ProductCostState()
   case class GetProductCost(productName: String)
+  case class DeleteProductCost(productName: String)
 
   // ProductCost Response
   case class ProductDoesNotExists()
   case class ProductPriceUpdated()
+  case class ProductPriceDeleted()
 
   // Order Commands
   case class AddOrder(customerEmail: String, orderItems: Set[OrderItem])
