@@ -322,5 +322,45 @@ class OrdersSpec extends BasicTestSpec {
         timeout.duration).asInstanceOf[Customer]
       assert(customerDetails.orders.size == 1)
     }
+
+    "add a refund order successfully" in {
+      val inventoryTestActor: ActorRef = system.actorOf(Props[Inventory])
+      val customerTestActor: ActorRef = system.actorOf(Props(Customers(inventoryTestActor)))
+      val productCostTestActor: ActorRef = system.actorOf(Props(ProductCost(inventoryTestActor)))
+      val ordersTestActor: ActorRef = system.actorOf(Props(Orders(customerTestActor,
+        inventoryTestActor, productCostTestActor)))
+
+      inventoryTestActor ! AddToInventory("Keyboard", 10)
+      expectMsg(ProductAdded)
+      inventoryTestActor ! AddToInventory("Mouse", 20)
+      expectMsg(ProductAdded)
+      inventoryTestActor ! AddToInventory("Chair", 5)
+      expectMsg(ProductAdded)
+
+      val testCustomer: Customer = Customer("Aditya Gupta",
+        "address 123", "123456789", "aditya.gupta@gmail.com")
+      customerTestActor ! AddCustomer(testCustomer)
+      expectMsg(CustomerAdded)
+
+      productCostTestActor ! UpdateCost("Keyboard", 100.0)
+      expectMsg(ProductPriceUpdated)
+      productCostTestActor ! UpdateCost("Mouse", 50.0)
+      expectMsg(ProductPriceUpdated)
+      productCostTestActor ! UpdateCost("Chair", 500.0)
+      expectMsg(ProductPriceUpdated)
+
+      val orderItems: Set[OrderItem] = Set(
+        OrderItem("Keyboard", 5),
+        OrderItem("Mouse", 10),
+        OrderItem("Chair", 1)
+      )
+      ordersTestActor ! AddOrder(testCustomer.email, orderItems, refund = true)
+      expectMsg(OrderProcessingOutput(processed = true)) // Order Successful
+
+      val orders: Map[String, Order] = Await.result(ordersTestActor ? OrdersState,
+        timeout.duration).asInstanceOf[Map[String, Order]]
+      assert(orders.valuesIterator.next.total == -1500.0
+      ) // Total verified
+    }
   }
 }

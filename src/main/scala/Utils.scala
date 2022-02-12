@@ -15,13 +15,15 @@ object Utils {
   def generateOrderNo: String = scala.util.Random.nextInt(1000000000).toString
 
   def calculateOrderTotal(itemDetails: Map[String, List[Double]],
-                          inventory: ActorRef)
+                          inventory: ActorRef, refund: Boolean)
                          (implicit timeout: Timeout): Double = {
     var totalAmount: Double = 0
     for (item <- itemDetails.keysIterator) {
       totalAmount += (itemDetails(item).head * itemDetails(item)(1))
       inventory ? DecreaseItemsFromInventory(item, itemDetails(item)(1).toInt)
     }
+    if(refund)
+      totalAmount *= -1
     totalAmount
   }
 }

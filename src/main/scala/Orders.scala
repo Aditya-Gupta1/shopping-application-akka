@@ -16,7 +16,7 @@ case class Orders(customer: ActorRef, inventory: ActorRef,
   var orders: Map[String, Order] = Map()
 
   override def receive: Receive = {
-    case AddOrder(customerEmail: String, orderItems: Set[OrderItem]) =>
+    case AddOrder(customerEmail: String, orderItems: Set[OrderItem], refund: Boolean) =>
       if(Utils.isValidCustomer(customer, customerEmail)) {
         logger.info("Customer valid. Processing Order...")
 
@@ -65,7 +65,7 @@ case class Orders(customer: ActorRef, inventory: ActorRef,
             logger.error(s"Order Processing Failed.")
           }
         else {
-          val totalAmount: Double = Utils.calculateOrderTotal(itemDetails, inventory)
+          val totalAmount: Double = Utils.calculateOrderTotal(itemDetails, inventory, refund)
           val orderNo: String = Utils.generateOrderNo
           val order: Order = Order(orderNo, orderItems, totalAmount, customerEmail)
           orders = orders ++ Map(orderNo -> order)

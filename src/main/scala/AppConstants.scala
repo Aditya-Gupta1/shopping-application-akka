@@ -1,7 +1,7 @@
 object AppConstants {
 
   case class Customer(name: String, address: String, phoneNo: String, email: String, orders: Set[Order] = Set())
-  case class Order(orderNo: String , items: Set[OrderItem], total: Double, customerEmail: String)
+  case class Order(orderNo: String , items: Set[OrderItem], total: Double, customerEmail: String, refund: Boolean = false)
   case class OrderItem(productName: String, quantity: Int)
 
   // Inventory Commands
@@ -46,7 +46,7 @@ object AppConstants {
   case class ProductPriceDeleted()
 
   // Order Commands
-  case class AddOrder(customerEmail: String, orderItems: Set[OrderItem])
+  case class AddOrder(customerEmail: String, orderItems: Set[OrderItem], refund: Boolean = false)
   case class OrdersState()
 
   // Order Response
